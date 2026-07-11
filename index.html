@@ -2177,12 +2177,82 @@ function restoreSnapshot(idx) {
   });
 })();
 
+// ── Prefill from the Needs Calculator (URL hash handoff) ──
+// Standalone use is completely unaffected: this only does anything when the app is
+// opened with a "#quote=..." payload (i.e. via the calculator's "Request Insurance
+// Quote" button). It runs AFTER restoreForm() so incoming figures win over any stale
+// autosave, then re-persists so a refresh keeps the prefilled data.
+// Returns true if a handoff payload was found and applied (so the caller can skip
+// restoreForm() — a handoff means "fresh quote for THIS client", and we don't want a
+// previous client's autosaved figures bleeding into the fields the calculator left blank).
+function applyQuotePrefill() {
+  const h = location.hash || '';
+  if (h.indexOf('#quote=') !== 0) return false;
+  let data;
+  try { data = JSON.parse(decodeURIComponent(atob(h.slice(7)))); }
+  catch (e) { return false; }
+  if (!data || typeof data !== 'object') return false;
+
+  // Accept both the nested shape { client:{...}, partner:{...} } and the older flat
+  // shape (the payload IS the client), for safety.
+  const client = data.client || data;
+  const partner = data.partner || null;
+
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el && v != null && v !== '') el.value = String(v); };
+  const setCur = (id, v) => { const el = document.getElementById(id); if (el && v != null && v !== '' && parseFloat(v) > 0) { el.value = String(v); fmtCur(el); } };
+  const setToggle = (gid, text) => {
+    const grp = document.getElementById(gid); if (!grp || !text) return;
+    const btn = Array.from(grp.querySelectorAll('.tb'))
+      .find(b => b.textContent.trim().toLowerCase() === String(text).trim().toLowerCase());
+    if (btn) tb(gid, btn);
+  };
+
+  // Fill one person's fields. pfx = 'c' (client) or 'p' (partner).
+  const fillPerson = (pfx, d) => {
+    if (!d) return;
+    setVal(pfx + '-name', d.name);
+    setToggle(pfx + '-sex', d.sex);
+    setToggle(pfx + '-smoker', d.smoker);
+    if (String(d.smoker).toLowerCase() === 'yes' && typeof toggleSmokerWarn === 'function') toggleSmokerWarn(pfx);
+    setCur(pfx + '-income', d.income);   // income first (drives autoCalcIP)
+    setCur(pfx + '-life-sum', d.life);
+    setCur(pfx + '-tpd-sum', d.tpd);
+    setCur(pfx + '-trm-sum', d.trauma);
+    setCur(pfx + '-ip-ben', d.ip);       // IP last so autoCalcIP doesn't overwrite it
+    // Child trauma card is off by default — enable only if an amount came through
+    if (d.child != null && d.child !== '' && parseFloat(d.child) > 0) {
+      setCur(pfx + '-child-sum', d.child);
+      const cc = document.getElementById('cc-' + pfx + '-child');
+      if (cc && !cc.classList.contains('on')) toggleCC(cc);
+    }
+  };
+
+  fillPerson('c', client);
+
+  // Partner is included only when the calculator ran a dual calculation. Otherwise
+  // deselect the partner New Business section so an empty partner doesn't appear.
+  const pNB = document.getElementById('qsc-p-nb');
+  if (partner) {
+    fillPerson('p', partner);
+    if (pNB) pNB.classList.add('on');
+  } else if (pNB) {
+    pNB.classList.remove('on');
+  }
+
+  // Persist the prefilled state and strip the payload from the URL
+  if (typeof saveForm === 'function') saveForm();
+  history.replaceState(null, '', location.pathname + location.search);
+  return true;
+}
+
 // Apply rules on load (script at bottom of body, DOM already parsed)
 applyRules('c');
 applyRules('p');
 updateSCOFields('c');
 updateSCOFields('p');
-restoreForm();
+// A handoff payload takes precedence over autosave: if one is present we apply it to
+// the pristine form and skip restoreForm() so no prior client's data bleeds through.
+if (!applyQuotePrefill()) restoreForm();
 updateSectionVis();
 </script>
 
