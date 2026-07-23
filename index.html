@@ -283,10 +283,29 @@ textarea{resize:vertical;min-height:54px}
           </div>
           <div class="fg" style="grid-column:span 2"><label>Occupation</label><input type="text" id="c-occ" placeholder="Occupation title"></div>
         </div>
-        <div class="fr c2">
+        <div class="fr c3">
           <div class="fg"><label>Annual Income</label>
             <input type="text" id="c-income" placeholder="$0" oninput="autoCalcIP('c')" onfocus="stripCur(this)" onblur="fmtCur(this);autoCalcIP('c')">
             <div class="hint">Gross annual — excluding super</div>
+          </div>
+          <div class="fg"><label>State</label>
+            <select id="c-state">
+              <option value="">Select…</option>
+              <option value="NSW">New South Wales</option>
+              <option value="VIC">Victoria</option>
+              <option value="QLD">Queensland</option>
+              <option value="WA">Western Australia</option>
+              <option value="SA">South Australia</option>
+              <option value="TAS">Tasmania</option>
+              <option value="ACT">Australian Capital Territory</option>
+              <option value="NT">Northern Territory</option>
+            </select>
+          </div>
+          <div class="fg"><label>Self-Employed</label>
+            <div class="tbg" id="c-self-emp">
+              <button class="tb" onclick="tb('c-self-emp',this)">Yes</button>
+              <button class="tb on" onclick="tb('c-self-emp',this)">No</button>
+            </div>
           </div>
         </div>
         <div class="quote-selector" style="margin-top:16px;padding-top:16px;border-top:1.5px solid var(--border)">
@@ -319,10 +338,29 @@ textarea{resize:vertical;min-height:54px}
           </div>
           <div class="fg" style="grid-column:span 2"><label>Occupation</label><input type="text" id="p-occ" placeholder="Occupation title"></div>
         </div>
-        <div class="fr c2">
+        <div class="fr c3">
           <div class="fg"><label>Annual Income</label>
             <input type="text" id="p-income" placeholder="$0" oninput="autoCalcIP('p')" onfocus="stripCur(this)" onblur="fmtCur(this);autoCalcIP('p')">
             <div class="hint">Gross annual — excluding super</div>
+          </div>
+          <div class="fg"><label>State</label>
+            <select id="p-state">
+              <option value="">Select…</option>
+              <option value="NSW">New South Wales</option>
+              <option value="VIC">Victoria</option>
+              <option value="QLD">Queensland</option>
+              <option value="WA">Western Australia</option>
+              <option value="SA">South Australia</option>
+              <option value="TAS">Tasmania</option>
+              <option value="ACT">Australian Capital Territory</option>
+              <option value="NT">Northern Territory</option>
+            </select>
+          </div>
+          <div class="fg"><label>Self-Employed</label>
+            <div class="tbg" id="p-self-emp">
+              <button class="tb" onclick="tb('p-self-emp',this)">Yes</button>
+              <button class="tb on" onclick="tb('p-self-emp',this)">No</button>
+            </div>
           </div>
         </div>
         <div class="quote-selector" style="margin-top:16px;padding-top:16px;border-top:1.5px solid var(--border)">
@@ -508,10 +546,18 @@ textarea{resize:vertical;min-height:54px}
                   <input type="text" id="c-ip-ben" placeholder="$0 /mo">
                 </div>
                 <div class="fg"><label>Ownership <button class="info-btn" onclick="toggleTip(this)" type="button">i</button></label>
-                  <div class="info-tip">Whether the policy is held in the insured's personal name or linked through a super fund.</div>
+                  <div class="info-tip">Whether the policy is held in the insured's personal name, inside super, or in an SMSF.</div>
                   <div class="tbg" id="c-ip-own">
-                    <button class="tb on" onclick="tb('c-ip-own',this)">Personal</button>
-                    <button class="tb" onclick="tb('c-ip-own',this)">Super-Linked</button>
+                    <button class="tb on" onclick="tb('c-ip-own',this);ipOwnChanged('c')">Personal</button>
+                    <button class="tb" onclick="tb('c-ip-own',this);ipOwnChanged('c')">Super</button>
+                    <button class="tb" onclick="tb('c-ip-own',this);ipOwnChanged('c')">SMSF</button>
+                  </div>
+                </div>
+                <div class="fg"><label>Super-Linked <button class="info-btn" onclick="toggleTip(this)" type="button">i</button></label>
+                  <div class="info-tip">A super-linked structure splits IP across a super-owned policy and a linked policy outside super, so benefits and features not payable from super can still be provided.</div>
+                  <div class="tbg" id="c-ip-sl">
+                    <button class="tb" onclick="tb('c-ip-sl',this)">Yes</button>
+                    <button class="tb on" onclick="tb('c-ip-sl',this)">No</button>
                   </div>
                 </div>
               </div>
@@ -756,8 +802,12 @@ textarea{resize:vertical;min-height:54px}
                   <input type="text" id="p-ip-ben" placeholder="$0 /mo">
                 </div>
                 <div class="fg"><label>Ownership <button class="info-btn" onclick="toggleTip(this)" type="button">i</button></label>
-                  <div class="info-tip">Whether the policy is held in the insured's personal name or linked through a super fund.</div>
-                  <div class="tbg" id="p-ip-own"><button class="tb on" onclick="tb('p-ip-own',this)">Personal</button><button class="tb" onclick="tb('p-ip-own',this)">Super-Linked</button></div>
+                  <div class="info-tip">Whether the policy is held in the insured's personal name, inside super, or in an SMSF.</div>
+                  <div class="tbg" id="p-ip-own"><button class="tb on" onclick="tb('p-ip-own',this);ipOwnChanged('p')">Personal</button><button class="tb" onclick="tb('p-ip-own',this);ipOwnChanged('p')">Super</button><button class="tb" onclick="tb('p-ip-own',this);ipOwnChanged('p')">SMSF</button></div>
+                </div>
+                <div class="fg"><label>Super-Linked <button class="info-btn" onclick="toggleTip(this)" type="button">i</button></label>
+                  <div class="info-tip">A super-linked structure splits IP across a super-owned policy and a linked policy outside super, so benefits and features not payable from super can still be provided.</div>
+                  <div class="tbg" id="p-ip-sl"><button class="tb" onclick="tb('p-ip-sl',this)">Yes</button><button class="tb on" onclick="tb('p-ip-sl',this)">No</button></div>
                 </div>
               </div>
               <div class="fr c3">
@@ -1144,7 +1194,7 @@ function tb(gid, btn) {
   btn.closest('.tbg').querySelectorAll('.tb').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   // Trigger rules when relevant groups change
-  const triggers = ['tpd-own','tpd-sl','tpd-str','trm-str','ip-own'];
+  const triggers = ['tpd-own','tpd-sl','tpd-str','trm-str'];
   for (const t of triggers) {
     if (gid.endsWith(t)) {
       applyRules(gid.startsWith('p-') ? 'p' : 'c');
@@ -1353,6 +1403,17 @@ function _note(id, msg) {
   else      { n.textContent = ''; n.classList.remove('show'); }
 }
 
+// Fired only on a genuine ownership click — sets the Super-Linked default
+// (Super → Yes, SMSF → No, Personal → No). Kept out of applyRules so restore
+// and load don't overwrite a value the user has manually set.
+function ipOwnChanged(pfx) {
+  const p = pfx + '-';
+  const own = gtb(p+'ip-own');
+  _setVal(p+'ip-sl', own === 'Super' ? 'Yes' : 'No');
+  applyRules(pfx);
+  debouncedSave();
+}
+
 function applyRules(pfx) {
   const p = pfx + '-';
 
@@ -1479,28 +1540,16 @@ function applyRules(pfx) {
     _note(p+'trm-bb', '');
   }
 
-  // ─── IP ───
+  // ─── IP Super-Linked ───
+  // Only applies to super or SMSF owned IP. Grey out (and hide from PDF) for Personal.
   const ipOwn = gtb(p+'ip-own');
-  const ipSuperLinked = ipOwn === 'Super-Linked';
-
-  // Waiting period: 90 day minimum in super
-  const waitEl = document.getElementById(p+'ip-wait');
-  if (waitEl) {
-    waitEl.querySelectorAll('.tb').forEach(b => {
-      const t = b.textContent.trim();
-      const shortWait = t === '14 days' || t === '30 days' || t === '60 days';
-      if (ipSuperLinked && shortWait) {
-        _dimBtn(b, 'Super-Linked IP requires 90 day minimum wait');
-        if (b.classList.contains('on')) {
-          b.classList.remove('on');
-          const d90 = [...waitEl.querySelectorAll('.tb')].find(x => x.textContent.trim() === '90 days');
-          if (d90) d90.classList.add('on');
-        }
-      } else {
-        _undimBtn(b);
-      }
-    });
-    _note(p+'ip-wait', ipSuperLinked ? 'Super-Linked: 90 day minimum waiting period' : '');
+  const ipInSuper = ipOwn === 'Super' || ipOwn === 'SMSF';
+  if (ipInSuper) {
+    _undimGroup(p+'ip-sl');
+    _note(p+'ip-sl', '');
+  } else {
+    _dimGroup(p+'ip-sl', 'Super-Linked only applies to super or SMSF owned IP');
+    _note(p+'ip-sl', '');
   }
 
   // Policy type: Indemnity only — Agreed Value removed from new business
@@ -1706,6 +1755,8 @@ function exportPDF(mode) {
     ['Sex', gtb('c-sex')],
     ['Smoker', gtb('c-smoker')],
     ['Occupation', gv('c-occ')],
+    ['Self-Employed', gtb('c-self-emp')],
+    ['State', gv('c-state')],
     ['Annual Income', gv('c-income')],
     gtb('tbg-l4l-c')==='Yes' ? ['Existing Insurer (L4L)', gv('c-l4l-insurer')] : null,
   ].filter(r=>r&&r[1]), M, y, W-M*2, 44) + 3;
@@ -1717,7 +1768,7 @@ function exportPDF(mode) {
     {id:'cc-c-life', lbl:'Life Cover', rows:[['Sum Insured',gv('c-life-sum')],['Ownership',gtb('c-life-own')],['Premium',gtb('c-life-prem')],['Notes',gv('c-life-notes')]]},
     {id:'cc-c-tpd',  lbl:'TPD Cover',  rows:[['Sum Insured',gv('c-tpd-sum')],['Ownership',gtb('c-tpd-own')],['Structure',gtb('c-tpd-str')],['Super-Linked',gtb('c-tpd-sl')],['Definition',gtb('c-tpd-def')],['Life Buy-Back',gtb('c-tpd-bb')],['Premium',gtb('c-tpd-prem')],['Notes',gv('c-tpd-notes')]]},
     {id:'cc-c-trauma',lbl:'Trauma Cover',rows:[['Sum Insured',gv('c-trm-sum')],['Ownership',gtb('c-trm-own')],['Structure',gtb('c-trm-str')],['Definition',gtb('c-trm-def')],['Reinstatement',gtb('c-trm-rein')],['Life Buy-Back',gtb('c-trm-bb')],['Premium',gtb('c-trm-prem')],['Notes',gv('c-trm-notes')]]},
-    {id:'cc-c-ip',   lbl:'Income Protection',rows:[['Monthly Benefit',gv('c-ip-ben')],['Ownership',gtb('c-ip-own')],['Waiting Period',gtb('c-ip-wait')],['Benefit Period',gtb('c-ip-bp')],['Policy Type',gtb('c-ip-type')],['Incr. Claim Opt.',gtb('c-ip-ico')],['Super Contrib. Opt.',gtb('c-ip-so')],gtb('c-ip-so')==='Yes'?['SG Rate',(gv('c-ip-sc-pct')||'12')+'%']:null,gtb('c-ip-so')==='Yes'?['SG Amount /mo',gv('c-ip-sc')]:null,gtb('c-ip-ns')==='Yes'?['Needlestick Benefit','Yes']:null,gtb('c-ip-boost')==='Yes'?['Booster Benefit','Yes']:null,['Premium',gtb('c-ip-prem')],['Notes',gv('c-ip-notes')]].filter(r=>r)},
+    {id:'cc-c-ip',   lbl:'Income Protection',rows:[['Monthly Benefit',gv('c-ip-ben')],['Ownership',gtb('c-ip-own')],(gtb('c-ip-own')==='Super'||gtb('c-ip-own')==='SMSF')?['Super-Linked',gtb('c-ip-sl')]:null,['Waiting Period',gtb('c-ip-wait')],['Benefit Period',gtb('c-ip-bp')],['Policy Type',gtb('c-ip-type')],['Incr. Claim Opt.',gtb('c-ip-ico')],['Super Contrib. Opt.',gtb('c-ip-so')],gtb('c-ip-so')==='Yes'?['SG Rate',(gv('c-ip-sc-pct')||'12')+'%']:null,gtb('c-ip-so')==='Yes'?['SG Amount /mo',gv('c-ip-sc')]:null,gtb('c-ip-ns')==='Yes'?['Needlestick Benefit','Yes']:null,gtb('c-ip-boost')==='Yes'?['Booster Benefit','Yes']:null,['Premium',gtb('c-ip-prem')],['Notes',gv('c-ip-notes')]].filter(r=>r)},
     {id:'cc-c-child',lbl:'Child Trauma',rows:[['Sum Insured/child',gv('c-child-sum')]]},
     {id:'cc-c-biz',  lbl:'Business Cover',rows:[['Cover Type',gtb('c-biz-type')],['Sum Insured',gv('c-biz-sum')],['Notes',gv('c-biz-notes')]]},
   ];
@@ -1749,6 +1800,7 @@ function exportPDF(mode) {
     y = tbl([
       ['Name',gv('p-name')],['Date of Birth',gv('p-dob')],['Age',gv('p-age')],
       ['Sex',gtb('p-sex')],['Smoker',gtb('p-smoker')],['Occupation',gv('p-occ')],
+      ['Self-Employed',gtb('p-self-emp')],['State',gv('p-state')],
       ['Annual Income',gv('p-income')],
       gtb('tbg-l4l-p')==='Yes' ? ['Existing Insurer (L4L)', gv('p-l4l-insurer')] : null,
     ].filter(r=>r&&r[1]), M, y, W-M*2, 44) + 3;
@@ -1759,7 +1811,7 @@ function exportPDF(mode) {
       {id:'cc-p-life', lbl:'Life Cover', rows:[['Sum Insured',gv('p-life-sum')],['Ownership',gtb('p-life-own')],['Premium',gtb('p-life-prem')],['Notes',gv('p-life-notes')]]},
       {id:'cc-p-tpd',  lbl:'TPD Cover',  rows:[['Sum Insured',gv('p-tpd-sum')],['Ownership',gtb('p-tpd-own')],['Structure',gtb('p-tpd-str')],['Super-Linked',gtb('p-tpd-sl')],['Definition',gtb('p-tpd-def')],['Life Buy-Back',gtb('p-tpd-bb')],['Premium',gtb('p-tpd-prem')],['Notes',gv('p-tpd-notes')]]},
       {id:'cc-p-trauma',lbl:'Trauma Cover',rows:[['Sum Insured',gv('p-trm-sum')],['Ownership',gtb('p-trm-own')],['Structure',gtb('p-trm-str')],['Definition',gtb('p-trm-def')],['Reinstatement',gtb('p-trm-rein')],['Life Buy-Back',gtb('p-trm-bb')],['Premium',gtb('p-trm-prem')],['Notes',gv('p-trm-notes')]]},
-      {id:'cc-p-ip',   lbl:'Income Protection',rows:[['Monthly Benefit',gv('p-ip-ben')],['Ownership',gtb('p-ip-own')],['Waiting Period',gtb('p-ip-wait')],['Benefit Period',gtb('p-ip-bp')],['Policy Type',gtb('p-ip-type')],['Incr. Claim Opt.',gtb('p-ip-ico')],['Super Contrib. Opt.',gtb('p-ip-so')],gtb('p-ip-so')==='Yes'?['SG Rate',(gv('p-ip-sc-pct')||'12')+'%']:null,gtb('p-ip-so')==='Yes'?['SG Amount /mo',gv('p-ip-sc')]:null,gtb('p-ip-ns')==='Yes'?['Needlestick Benefit','Yes']:null,gtb('p-ip-boost')==='Yes'?['Booster Benefit','Yes']:null,['Premium',gtb('p-ip-prem')],['Notes',gv('p-ip-notes')]].filter(r=>r)},
+      {id:'cc-p-ip',   lbl:'Income Protection',rows:[['Monthly Benefit',gv('p-ip-ben')],['Ownership',gtb('p-ip-own')],(gtb('p-ip-own')==='Super'||gtb('p-ip-own')==='SMSF')?['Super-Linked',gtb('p-ip-sl')]:null,['Waiting Period',gtb('p-ip-wait')],['Benefit Period',gtb('p-ip-bp')],['Policy Type',gtb('p-ip-type')],['Incr. Claim Opt.',gtb('p-ip-ico')],['Super Contrib. Opt.',gtb('p-ip-so')],gtb('p-ip-so')==='Yes'?['SG Rate',(gv('p-ip-sc-pct')||'12')+'%']:null,gtb('p-ip-so')==='Yes'?['SG Amount /mo',gv('p-ip-sc')]:null,gtb('p-ip-ns')==='Yes'?['Needlestick Benefit','Yes']:null,gtb('p-ip-boost')==='Yes'?['Booster Benefit','Yes']:null,['Premium',gtb('p-ip-prem')],['Notes',gv('p-ip-notes')]].filter(r=>r)},
       {id:'cc-p-child',lbl:'Child Trauma',rows:[['Sum Insured/child',gv('p-child-sum')]]},
       {id:'cc-p-biz',  lbl:'Business Cover',rows:[['Cover Type',gtb('p-biz-type')],['Sum Insured',gv('p-biz-sum')],['Notes',gv('p-biz-notes')]]},
     ];
@@ -2077,7 +2129,7 @@ const SAVE_KEY = 'caa_quote_autosave';
 const HISTORY_KEY = 'caa_quote_history';
 function saveForm() {
   const data = {};
-  document.querySelectorAll('input[id],textarea[id]').forEach(el => { data[el.id] = el.value; });
+  document.querySelectorAll('input[id],textarea[id],select[id]').forEach(el => { data[el.id] = el.value; });
   document.querySelectorAll('.tb.on').forEach(btn => {
     const g = btn.closest('.tbg'); if (g && g.id) data['_tb_' + g.id] = btn.textContent.trim();
   });
@@ -2213,6 +2265,8 @@ function applyQuotePrefill() {
     setVal(pfx + '-name', d.name);
     setToggle(pfx + '-sex', d.sex);
     setToggle(pfx + '-smoker', d.smoker);
+    setVal(pfx + '-state', d.state);
+    setToggle(pfx + '-self-emp', d.selfEmployed);
     if (String(d.smoker).toLowerCase() === 'yes' && typeof toggleSmokerWarn === 'function') toggleSmokerWarn(pfx);
     setCur(pfx + '-income', d.income);   // income first (drives autoCalcIP)
     setCur(pfx + '-life-sum', d.life);
@@ -2254,6 +2308,7 @@ updateSCOFields('p');
 // the pristine form and skip restoreForm() so no prior client's data bleeds through.
 if (!applyQuotePrefill()) restoreForm();
 updateSectionVis();
+updateExportButtons();
 </script>
 
 <!-- ── History Modal ── -->
