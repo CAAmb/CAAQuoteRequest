@@ -631,6 +631,7 @@ textarea{resize:vertical;min-height:54px}
                 </div>
                 <div class="fg"><label>SG Amount /mo</label>
                   <input type="text" id="c-ip-sc" placeholder="$0 /mo" readonly style="background:#f4f7fa">
+                  <div id="c-ip-sc-note" class="hint" style="display:none;color:var(--red);font-weight:700">⚠ Enter annual income to calculate SG amount</div>
                 </div>
               </div>
               <div class="fg"><label>Notes / Extra Benefits</label><textarea id="c-ip-notes" placeholder="Additional instructions..."></textarea></div>
@@ -860,6 +861,7 @@ textarea{resize:vertical;min-height:54px}
                 </div>
                 <div class="fg"><label>SG Amount /mo</label>
                   <input type="text" id="p-ip-sc" placeholder="$0 /mo" readonly style="background:#f4f7fa">
+                  <div id="p-ip-sc-note" class="hint" style="display:none;color:var(--red);font-weight:700">⚠ Enter annual income to calculate SG amount</div>
                 </div>
               </div>
               <div class="fg"><label>Notes</label><textarea id="p-ip-notes" placeholder="Additional instructions..."></textarea></div>
@@ -1300,6 +1302,10 @@ function calcSuperContrib(pfx) {
   const monthly = income * pct / 100 / 12;
   const scEl = document.getElementById(pfx+'-ip-sc');
   if (scEl) scEl.value = monthly > 0 ? '$' + Math.round(monthly).toLocaleString('en-AU') : '';
+  // Warn when SG Option is on and a rate is set but income is missing (amount can't calculate)
+  const scoYes = document.querySelector('#'+pfx+'-ip-so .tb.on')?.textContent.trim() === 'Yes';
+  const noteEl = document.getElementById(pfx+'-ip-sc-note');
+  if (noteEl) noteEl.style.display = (scoYes && pct > 0 && income <= 0) ? '' : 'none';
 }
 function capSuperContrib(pfx) {
   const el = document.getElementById(pfx+'-ip-sc-pct');
@@ -1317,7 +1323,10 @@ function updateSCOFields(pfx) {
   const scoYes = document.querySelector('#'+pfx+'-ip-so .tb.on')?.textContent.trim() === 'Yes';
   const row = document.getElementById(pfx+'-ip-sco-row');
   if (row) row.style.display = scoYes ? '' : 'none';
-  if (!scoYes) { const sc = document.getElementById(pfx+'-ip-sc'); if (sc) sc.value = ''; }
+  if (!scoYes) {
+    const sc = document.getElementById(pfx+'-ip-sc'); if (sc) sc.value = '';
+    const noteEl = document.getElementById(pfx+'-ip-sc-note'); if (noteEl) noteEl.style.display = 'none';
+  }
   else calcSuperContrib(pfx);
 }
 
@@ -1785,7 +1794,7 @@ function exportPDF(mode) {
     {id:'cc-c-life', lbl:'Life Cover', rows:[['Sum Insured',gv('c-life-sum')],['Ownership',gtb('c-life-own')],['Premium',gtb('c-life-prem')],['Notes',gv('c-life-notes')]]},
     {id:'cc-c-tpd',  lbl:'TPD Cover',  rows:[['Sum Insured',gv('c-tpd-sum')],['Ownership',gtb('c-tpd-own')],['Structure',gtb('c-tpd-str')],['Super-Linked',gtb('c-tpd-sl')],['Definition',gtb('c-tpd-def')],['Life Buy-Back',gtb('c-tpd-bb')],['Premium',gtb('c-tpd-prem')],['Notes',gv('c-tpd-notes')]]},
     {id:'cc-c-trauma',lbl:'Trauma Cover',rows:[['Sum Insured',gv('c-trm-sum')],['Ownership',gtb('c-trm-own')],['Structure',gtb('c-trm-str')],['Definition',gtb('c-trm-def')],['Reinstatement',gtb('c-trm-rein')],['Life Buy-Back',gtb('c-trm-bb')],['Premium',gtb('c-trm-prem')],['Notes',gv('c-trm-notes')]]},
-    {id:'cc-c-ip',   lbl:'Income Protection',rows:[['Monthly Benefit',gv('c-ip-ben')],['Ownership',gtb('c-ip-own')],(gtb('c-ip-own')==='Super'||gtb('c-ip-own')==='SMSF')?['Super-Linked',gtb('c-ip-sl')]:null,['Waiting Period',gtb('c-ip-wait')],['Benefit Period',gtb('c-ip-bp')],['Policy Type',gtb('c-ip-type')],['Incr. Claim Opt.',gtb('c-ip-ico')],['Super Contrib. Opt.',gtb('c-ip-so')],gtb('c-ip-so')==='Yes'?['SG Rate',(gv('c-ip-sc-pct')||'12')+'%']:null,gtb('c-ip-so')==='Yes'?['SG Amount /mo',gv('c-ip-sc')]:null,gtb('c-ip-ns')==='Yes'?['Needlestick Benefit','Yes']:null,gtb('c-ip-boost')==='Yes'?['Booster Benefit','Yes']:null,['Premium',gtb('c-ip-prem')],['Notes',gv('c-ip-notes')]].filter(r=>r)},
+    {id:'cc-c-ip',   lbl:'Income Protection',rows:[['Monthly Benefit',gv('c-ip-ben')],['Ownership',gtb('c-ip-own')],(gtb('c-ip-own')==='Super'||gtb('c-ip-own')==='SMSF')?['Super-Linked',gtb('c-ip-sl')]:null,['Waiting Period',gtb('c-ip-wait')],['Benefit Period',gtb('c-ip-bp')],['Policy Type',gtb('c-ip-type')],['Incr. Claim Opt.',gtb('c-ip-ico')],['Super Contrib. Opt.',gtb('c-ip-so')],(gtb('c-ip-so')==='Yes'&&gv('c-ip-sc'))?['SG Rate',gv('c-ip-sc-pct')+'%']:null,(gtb('c-ip-so')==='Yes'&&gv('c-ip-sc'))?['SG Amount /mo',gv('c-ip-sc')]:null,gtb('c-ip-ns')==='Yes'?['Needlestick Benefit','Yes']:null,gtb('c-ip-boost')==='Yes'?['Booster Benefit','Yes']:null,['Premium',gtb('c-ip-prem')],['Notes',gv('c-ip-notes')]].filter(r=>r)},
     {id:'cc-c-child',lbl:'Child Trauma',rows:getChildRows('c')},
     {id:'cc-c-biz',  lbl:'Business Cover',rows:[['Cover Type',gtb('c-biz-type')],['Sum Insured',gv('c-biz-sum')],['Notes',gv('c-biz-notes')]]},
   ];
@@ -1828,7 +1837,7 @@ function exportPDF(mode) {
       {id:'cc-p-life', lbl:'Life Cover', rows:[['Sum Insured',gv('p-life-sum')],['Ownership',gtb('p-life-own')],['Premium',gtb('p-life-prem')],['Notes',gv('p-life-notes')]]},
       {id:'cc-p-tpd',  lbl:'TPD Cover',  rows:[['Sum Insured',gv('p-tpd-sum')],['Ownership',gtb('p-tpd-own')],['Structure',gtb('p-tpd-str')],['Super-Linked',gtb('p-tpd-sl')],['Definition',gtb('p-tpd-def')],['Life Buy-Back',gtb('p-tpd-bb')],['Premium',gtb('p-tpd-prem')],['Notes',gv('p-tpd-notes')]]},
       {id:'cc-p-trauma',lbl:'Trauma Cover',rows:[['Sum Insured',gv('p-trm-sum')],['Ownership',gtb('p-trm-own')],['Structure',gtb('p-trm-str')],['Definition',gtb('p-trm-def')],['Reinstatement',gtb('p-trm-rein')],['Life Buy-Back',gtb('p-trm-bb')],['Premium',gtb('p-trm-prem')],['Notes',gv('p-trm-notes')]]},
-      {id:'cc-p-ip',   lbl:'Income Protection',rows:[['Monthly Benefit',gv('p-ip-ben')],['Ownership',gtb('p-ip-own')],(gtb('p-ip-own')==='Super'||gtb('p-ip-own')==='SMSF')?['Super-Linked',gtb('p-ip-sl')]:null,['Waiting Period',gtb('p-ip-wait')],['Benefit Period',gtb('p-ip-bp')],['Policy Type',gtb('p-ip-type')],['Incr. Claim Opt.',gtb('p-ip-ico')],['Super Contrib. Opt.',gtb('p-ip-so')],gtb('p-ip-so')==='Yes'?['SG Rate',(gv('p-ip-sc-pct')||'12')+'%']:null,gtb('p-ip-so')==='Yes'?['SG Amount /mo',gv('p-ip-sc')]:null,gtb('p-ip-ns')==='Yes'?['Needlestick Benefit','Yes']:null,gtb('p-ip-boost')==='Yes'?['Booster Benefit','Yes']:null,['Premium',gtb('p-ip-prem')],['Notes',gv('p-ip-notes')]].filter(r=>r)},
+      {id:'cc-p-ip',   lbl:'Income Protection',rows:[['Monthly Benefit',gv('p-ip-ben')],['Ownership',gtb('p-ip-own')],(gtb('p-ip-own')==='Super'||gtb('p-ip-own')==='SMSF')?['Super-Linked',gtb('p-ip-sl')]:null,['Waiting Period',gtb('p-ip-wait')],['Benefit Period',gtb('p-ip-bp')],['Policy Type',gtb('p-ip-type')],['Incr. Claim Opt.',gtb('p-ip-ico')],['Super Contrib. Opt.',gtb('p-ip-so')],(gtb('p-ip-so')==='Yes'&&gv('p-ip-sc'))?['SG Rate',gv('p-ip-sc-pct')+'%']:null,(gtb('p-ip-so')==='Yes'&&gv('p-ip-sc'))?['SG Amount /mo',gv('p-ip-sc')]:null,gtb('p-ip-ns')==='Yes'?['Needlestick Benefit','Yes']:null,gtb('p-ip-boost')==='Yes'?['Booster Benefit','Yes']:null,['Premium',gtb('p-ip-prem')],['Notes',gv('p-ip-notes')]].filter(r=>r)},
       {id:'cc-p-child',lbl:'Child Trauma',rows:getChildRows('p')},
       {id:'cc-p-biz',  lbl:'Business Cover',rows:[['Cover Type',gtb('p-biz-type')],['Sum Insured',gv('p-biz-sum')],['Notes',gv('p-biz-notes')]]},
     ];
@@ -2338,6 +2347,12 @@ function applyQuotePrefill() {
   } else if (pNB) {
     pNB.classList.remove('on');
   }
+
+  // Recalculate income-derived fields now that income is populated. Must run AFTER
+  // the fields are filled (the load-time call ran before prefill, when income was
+  // still empty). updateSCOFields → calcSuperContrib recomputes the SG amount; we do
+  // NOT call autoCalcIP here so the calculator's own IP monthly benefit is preserved.
+  updateSCOFields('c'); updateSCOFields('p');
 
   // Persist the prefilled state and strip the payload from the URL
   if (typeof saveForm === 'function') saveForm();
