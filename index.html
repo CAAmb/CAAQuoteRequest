@@ -1748,6 +1748,51 @@ function exportPDF(mode) {
     return fy + 3;
   }
 
+  // ── Pagination helpers ──
+  const PB = H - FH - 4;   // safe content bottom (above footer)
+  const TOP = 16;          // top margin on continuation pages
+  // Estimate rendered height of a set of [key,value] rows in a colW-wide table.
+  function estRowsH(rows, valChars) {
+    const cpl = valChars || 26; // approx value chars per line at fontSize 7.5
+    let h = 0;
+    rows.forEach(([k,v]) => {
+      const lines = Math.max(1, Math.ceil(String(v||'').length / cpl));
+      h += Math.max(6.6, 3.05*lines + 3.6);
+    });
+    return h;
+  }
+  function estCoverH(rows) {
+    const r = rows.filter(rr => rr[1] && String(rr[1]).trim() && rr[1] !== '—');
+    const use = r.length ? r : [['—','No details entered']];
+    return 7 /*miniHdr*/ + estRowsH(use, 22) + 5 /*border+return pad*/;
+  }
+  // Thin continuation banner for overflow pages.
+  function contHdr(name) {
+    doc.setFillColor(...NAVY); doc.rect(0,0,W,12,'F');
+    doc.setFillColor(...PEACH); doc.rect(0,11,W,0.8,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','bold');
+    doc.text((name||'') + '  —  continued', M, 8);
+    return TOP;
+  }
+  // If `needed` mm won't fit, start a new page with a continuation banner.
+  function ensure(yy, needed, name) {
+    if (yy + needed > PB) { addPg(); return contHdr(name); }
+    return yy;
+  }
+  // Render a set of cover blocks in a 2-col grid with page breaks between rows.
+  function renderCovers(startY, covers, name) {
+    let y = startY;
+    for (let k = 0; k < covers.length; k += 2) {
+      const left = covers[k], right = covers[k+1];
+      const rowH = Math.max(estCoverH(left.rows), right ? estCoverH(right.rows) : 0);
+      if (y + rowH > PB) { addPg(); y = contHdr(name); }
+      const yl = coverBlock(M, y, left.lbl, left.rows);
+      const yr = right ? coverBlock(M+colW+4, y, right.lbl, right.rows) : y;
+      y = Math.max(yl, yr);
+    }
+    return y;
+  }
+
   // ── PAGE 1: Client ──
   if (doClient && doClientNB) {
   addPg();
@@ -1789,7 +1834,6 @@ function exportPDF(mode) {
 
   // Cover 2-col grid
   y = secHdr(M,y,W-M*2,'Cover Requirements') + 2;
-  let lY=y, rY=y, i=0;
   const cCovers = [
     {id:'cc-c-life', lbl:'Life Cover', rows:[['Sum Insured',gv('c-life-sum')],['Ownership',gtb('c-life-own')],['Premium',gtb('c-life-prem')],['Notes',gv('c-life-notes')]]},
     {id:'cc-c-tpd',  lbl:'TPD Cover',  rows:[['Sum Insured',gv('c-tpd-sum')],['Ownership',gtb('c-tpd-own')],['Structure',gtb('c-tpd-str')],['Super-Linked',gtb('c-tpd-sl')],['Definition',gtb('c-tpd-def')],['Life Buy-Back',gtb('c-tpd-bb')],['Premium',gtb('c-tpd-prem')],['Notes',gv('c-tpd-notes')]]},
@@ -1798,22 +1842,15 @@ function exportPDF(mode) {
     {id:'cc-c-child',lbl:'Child Trauma',rows:getChildRows('c')},
     {id:'cc-c-biz',  lbl:'Business Cover',rows:[['Cover Type',gtb('c-biz-type')],['Sum Insured',gv('c-biz-sum')],['Notes',gv('c-biz-notes')]]},
   ];
-  cCovers.forEach(cv => {
-    if (!isOn(cv.id)) return;
-    if (i%2===0) { if (i>0) lY = rY = Math.max(lY,rY); lY = coverBlock(M, lY, cv.lbl, cv.rows); }
-    else          { rY = coverBlock(M+colW+4, rY, cv.lbl, cv.rows); }
-    i++;
-  });
-  y = Math.max(lY,rY) + 1;
+  y = renderCovers(y, cCovers.filter(cv => isOn(cv.id)), cName) + 1;
 
   // Client notes
   const cNotes = gv('c-notes');
   if (cNotes) {
+    y = ensure(y, 9 + estRowsH([['Instructions', cNotes]]), cName);
     y = secHdr(M,y,W-M*2,'Notes & Instructions') + 2;
     y = tbl([['Instructions', cNotes]], M, y, W-M*2, 44) + 1;
   }
-
-  ftr(pg, tot);
   } // end doClient
 
   // ── PAGE 2: Partner ──
@@ -1832,7 +1869,6 @@ function exportPDF(mode) {
     ].filter(r=>r&&r[1]), M, y, W-M*2, 44) + 3;
 
     y = secHdr(M,y,W-M*2,'Cover Requirements') + 2;
-    let plY=y, prY=y, pi=0;
     const pCovers = [
       {id:'cc-p-life', lbl:'Life Cover', rows:[['Sum Insured',gv('p-life-sum')],['Ownership',gtb('p-life-own')],['Premium',gtb('p-life-prem')],['Notes',gv('p-life-notes')]]},
       {id:'cc-p-tpd',  lbl:'TPD Cover',  rows:[['Sum Insured',gv('p-tpd-sum')],['Ownership',gtb('p-tpd-own')],['Structure',gtb('p-tpd-str')],['Super-Linked',gtb('p-tpd-sl')],['Definition',gtb('p-tpd-def')],['Life Buy-Back',gtb('p-tpd-bb')],['Premium',gtb('p-tpd-prem')],['Notes',gv('p-tpd-notes')]]},
@@ -1841,20 +1877,14 @@ function exportPDF(mode) {
       {id:'cc-p-child',lbl:'Child Trauma',rows:getChildRows('p')},
       {id:'cc-p-biz',  lbl:'Business Cover',rows:[['Cover Type',gtb('p-biz-type')],['Sum Insured',gv('p-biz-sum')],['Notes',gv('p-biz-notes')]]},
     ];
-    pCovers.forEach(cv => {
-      if (!isOn(cv.id)) return;
-      if (pi%2===0) { if (pi>0) plY = prY = Math.max(plY,prY); plY = coverBlock(M, plY, cv.lbl, cv.rows); }
-      else          { prY = coverBlock(M+colW+4, prY, cv.lbl, cv.rows); }
-      pi++;
-    });
-    y = Math.max(plY,prY) + 1;
+    y = renderCovers(y, pCovers.filter(cv => isOn(cv.id)), pName) + 1;
 
     const pNotes=gv('p-notes');
     if (pNotes) {
+      y = ensure(y, 9 + estRowsH([['Instructions', pNotes]]), pName);
       y = secHdr(M,y,W-M*2,'Notes & Instructions') + 2;
-      tbl([['Instructions',pNotes]], M, y, W-M*2, 44);
+      y = tbl([['Instructions',pNotes]], M, y, W-M*2, 44) + 1;
     }
-    ftr(pg, tot);
   }
 
   // ── PAGE 3: Existing Cover ──
@@ -1882,13 +1912,14 @@ function exportPDF(mode) {
 
     if (renderClientEx) {
       const ecPols = getPolicySummaryRows('ec-policies');
-      if (ecPols.length) { y = secHdr(M,y,W-M*2,'Current Policies — Client') + 2; y = tbl(ecPols, M, y, W-M*2, 44) + 4; }
+      if (ecPols.length) { y = ensure(y, 9 + estRowsH(ecPols), exName); y = secHdr(M,y,W-M*2,'Current Policies — Client') + 2; y = tbl(ecPols, M, y, W-M*2, 44) + 4; }
+      y = ensure(y, 22, exName);
       y = secHdr(M,y,W-M*2,'Alterations — Client') + 2;
       doc.autoTable({
         startY: y,
         head: [['Cover','Existing','Alteration','New Amount','Structure / Changes']],
         body: getExRows('ec-policies'),
-        margin: {left:M,right:M},
+        margin: {left:M,right:M,top:TOP,bottom:FH+4},
         tableWidth: W-M*2,
         styles: {font:'helvetica',fontSize:7.5,cellPadding:1.8,textColor:INK,fillColor:[255,255,255],lineWidth:0},
         headStyles: {fillColor:NM,textColor:[255,255,255],fontStyle:'bold',fontSize:7.5},
@@ -1898,18 +1929,19 @@ function exportPDF(mode) {
       });
       y = doc.lastAutoTable.finalY + 3;
       const ecN = gv('ec-notes');
-      if (ecN) { y = secHdr(M,y,W-M*2,'Notes') + 2; y = tbl([['Notes',ecN]], M, y, W-M*2, 24) + 4; }
+      if (ecN) { y = ensure(y, 9 + estRowsH([['Notes',ecN]]), exName); y = secHdr(M,y,W-M*2,'Notes') + 2; y = tbl([['Notes',ecN]], M, y, W-M*2, 24) + 4; }
     }
 
     if (renderPartnerEx) {
       const epPols = getPolicySummaryRows('ep-policies');
-      if (epPols.length) { y = secHdr(M,y,W-M*2,'Current Policies — Partner') + 2; y = tbl(epPols, M, y, W-M*2, 44) + 4; }
+      if (epPols.length) { y = ensure(y, 9 + estRowsH(epPols), exName); y = secHdr(M,y,W-M*2,'Current Policies — Partner') + 2; y = tbl(epPols, M, y, W-M*2, 44) + 4; }
+      y = ensure(y, 22, exName);
       y = secHdr(M,y,W-M*2,'Alterations — Partner') + 2;
       doc.autoTable({
         startY: y,
         head: [['Cover','Existing','Alteration','New Amount','Structure / Changes']],
         body: getExRows('ep-policies'),
-        margin: {left:M,right:M},
+        margin: {left:M,right:M,top:TOP,bottom:FH+4},
         tableWidth: W-M*2,
         styles: {font:'helvetica',fontSize:7.5,cellPadding:1.8,textColor:INK,fillColor:[255,255,255],lineWidth:0},
         headStyles: {fillColor:NM,textColor:[255,255,255],fontStyle:'bold',fontSize:7.5},
@@ -1919,11 +1951,13 @@ function exportPDF(mode) {
       });
       y = doc.lastAutoTable.finalY + 3;
       const epN = gv('ep-notes');
-      if (epN) { y = secHdr(M,y,W-M*2,'Partner Notes') + 2; tbl([['Notes',epN]], M, y, W-M*2, 24); }
+      if (epN) { y = ensure(y, 9 + estRowsH([['Notes',epN]]), exName); y = secHdr(M,y,W-M*2,'Partner Notes') + 2; y = tbl([['Notes',epN]], M, y, W-M*2, 24) + 1; }
     }
-
-    ftr(pg, tot);
   }
+
+  // Footers last, once total page count is known (covers any overflow pages).
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) { doc.setPage(p); ftr(p, totalPages); }
 
   // Filename
   const safe = s => (s||'').replace(/[\\/:*?"<>|]/g,'').trim();
